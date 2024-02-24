@@ -4,7 +4,6 @@ from python.OpenAIHelper import OpenAIHelper
 import time  # Für die Wartezeit zwischen den Statusabfragen
 
 
-
 class OpenAIGenerator:
     BASE_URL = 'https://api.openai.com/v1/'
     MODEL_1 = 'gpt-4-1106-preview'  # Special GPT-4 model
@@ -26,7 +25,6 @@ class OpenAIGenerator:
         self.client = OpenAI(api_key=self.api_key)
         # self.helper.delete_all_assistants()
 
-
     def _get_headers(self):
         """Hilfsmethode zur Generierung der Request-Header."""
         return {
@@ -34,7 +32,8 @@ class OpenAIGenerator:
             "Authorization": "Bearer {self.api_key}"
         }
 
-    def generate_text(self, prompt, thread_id=None, run_id=None, assistant_id=None, model_version="gpt-4-1106-preview", max_tokens=4000):
+    def generate_text(self, prompt, thread_id=None, run_id=None, assistant_id=None, model_version="gpt-4-1106-preview",
+                      max_tokens=4000):
         if model_version not in [self.MODEL_1, self.MODEL_2, self.MODEL_3]:
             return "Invalid model version specified."
         # Erstelle einen neuen Thread, wenn keine Thread-ID vorhanden ist
@@ -62,10 +61,8 @@ class OpenAIGenerator:
 
     def _make_request_gpt_4(self, prompt, thread_id=None, run_id=None, assistant_id=None):
         # Füge die Anfrage als Nachricht zu einem existierenden Thread hinzu
-        message_response = self.helper.create_thread_message(thread_id, "user", prompt)
+        self.helper.create_thread_message(thread_id, "user", prompt)
         current_run = self.helper.create_run(thread_id, assistant_id)
-
-
 
         run_id = current_run.id
 
@@ -81,7 +78,6 @@ class OpenAIGenerator:
         chat_history = self.helper.get_all_messages_content_as_a_chat_history(thread_id)
         # print('chat history:', chat_history)
         return latest_message
-
 
     def _make_request_gpt_3_5(self, prompt, max_tokens):
         try:
