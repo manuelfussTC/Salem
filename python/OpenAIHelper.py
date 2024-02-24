@@ -12,7 +12,7 @@ class OpenAIHelper:
         tools = []
         model = "gpt-3.5-turbo-1106"
         new_assistant = self.create_assistant(instructions, name, tools, model)
-        print("Neuer Assistent erstellt: ", new_assistant.id, "\r\n")
+        # print("Neuer Assistent erstellt: ", new_assistant.id, "\r\n")
         return new_assistant
 
     def save_thread_id(self, thread_id, file_path='current_thread_id.txt'):

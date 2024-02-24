@@ -12,7 +12,7 @@ class CommandParser:
         if action and obj:
             if action in ['search', 'find'] and obj == 'file':
                 search_result = self.file_searcher.search_by_file_type(text, thread_id, run_id, assistant_id)
-                return True
+                return search_result
             elif action in ['explain', 'tell', 'describe'] and obj == 'file':
                 explanation = self.file_explainer.explain_files(text, thread_id, run_id, assistant_id)
                 return explanation

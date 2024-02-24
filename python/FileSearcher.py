@@ -18,8 +18,9 @@ class FileSearcher:
 
         file_type = self.openai_generator.generate_text(prompt_to_get_filetype, model_version="gpt-3.5-turbo-16k")
         # Konvertiere den JSON-String in ein Python-Diktat
-
-
+        content_dict = json.loads(file_type.content)
+        file_type = content_dict['file_type']
+        file_type = file_type.lower().replace(' ', '').replace('\n', '')
         # find all files with the given file type
         matches = []
         for root, dirs, files in os.walk(self.root_path):
@@ -29,7 +30,7 @@ class FileSearcher:
         # now generate the answer from gpt-4 to the question in the search_prompt together with the final matches
         final_prompt_for_openai = f"Tell me in a short and informal way, high level, no technical talk, the result of the search for '{search_prompt}' and the files found: {matches}"
         final_answer = self.openai_generator.generate_text(final_prompt_for_openai, thread_id=thread_id, run_id=run_id, assistant_id=assistant_id)
-        return True
+        return final_answer
 
     # @TODO: Implement the merge_and_search_content method and return a final answer from GPT-4-1106-preview
     def merge_and_search_content(self, search_prompt):

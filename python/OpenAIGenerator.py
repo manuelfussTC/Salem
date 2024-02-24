@@ -45,17 +45,14 @@ class OpenAIGenerator:
         #     else:
         #         # Fehlerbehandlung, wenn keine Thread-ID erstellt werden konnte
         #         return "Failed to create thread or retrieve thread ID."
-        print('model version:', model_version)
+        # print('model version:', model_version)
         if model_version == self.MODEL_3:
             response = self._make_request_gpt_3_5(prompt, max_tokens)
         else:
             # Für GPT-4 Modelle, nutze die Thread-Logik
             response = self._make_request_gpt_4(prompt, thread_id, run_id, assistant_id)
 
-        if not self._is_response_valid(response):
-            return "Failed to generate text."
-        print('response 456:', response)
-        return self._extract_text(response, model_version)
+        return response
 
     # def _make_request(self, prompt, model, max_tokens, thread_id=None, run_id=None):
     #     if model == self.MODEL_3:  # gpt-3.5-turbo-16k verwendet eine andere Endpunktstruktur
@@ -74,7 +71,7 @@ class OpenAIGenerator:
 
         # Warte, bis der Run-Status auf "completed" gesetzt ist
         while current_run.status != 'completed':
-            print("Warte auf Run-Abschluss. Aktueller Status:", current_run.status)
+            # print("Warte auf Run-Abschluss. Aktueller Status:", current_run.status)
             time.sleep(1)  # Warte eine Sekunde vor der nächsten Statusabfrage
             current_run = self.helper.retrieve_run(thread_id, run_id)  # Aktualisiere den Run-Status
 
@@ -82,7 +79,7 @@ class OpenAIGenerator:
         latest_message = self.helper.get_latest_message_content(thread_id)
 
         chat_history = self.helper.get_all_messages_content_as_a_chat_history(thread_id)
-        print('chat history:', chat_history)
+        # print('chat history:', chat_history)
         return latest_message
 
 

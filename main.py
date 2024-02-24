@@ -2,7 +2,6 @@ import json
 from python.OpenAIHelper import OpenAIHelper
 from python.TextInputHandler import TextInputHandler
 
-
 # Importiere TextInputHandler, wenn du es in deinem Kontext benötigst
 
 def main():
@@ -34,9 +33,10 @@ def main():
 
         text_handler = TextInputHandler()
 
-        text_handler.handle_input(input_text, thread_id, run.id, assistant.id)
+        command = text_handler.handle_input(input_text, thread_id, run.id, assistant.id)
 
         # Hier würde die Logik zur Verarbeitung der Anweisung folgen
+        print(command)
 
 
 if __name__ == "__main__":
