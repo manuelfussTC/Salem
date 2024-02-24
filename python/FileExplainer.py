@@ -7,7 +7,7 @@ class FileExplainer:
         self.openai_generator = openai_generator
         self.root_path = root_path
 
-    def explain_files(self, file_type, thread_id=None, run_id=None):
+    def explain_files(self, file_type, thread_id=None, run_id=None, assistant_id=None):
         """
         Sammelt Inhalte aller Dateien eines spezifischen Typs und sendet diese an GPT zur Analyse.
         """
@@ -25,5 +25,5 @@ class FileExplainer:
         print('Prompt:', prompt)
 
         # Verwende OpenAIGenerator, um Text basierend auf dem zusammengeführten Inhalt zu generieren
-        explanation = self.openai_generator.generate_text(prompt, thread_id=thread_id, run_id=run_id)
+        explanation = self.openai_generator.generate_text(prompt, thread_id=thread_id, run_id=run_id, assistant_id=assistant_id)
         return explanation

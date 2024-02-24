@@ -48,7 +48,6 @@ class OpenAIHelper:
             tools=[{"type": tool} for tool in tools],
             model=model,
         )
-        print("Assistant created:", my_assistant.id, "\r\n")
         return my_assistant
 
     def list_assistants(self):
@@ -124,7 +123,6 @@ class OpenAIHelper:
             return "Keine Nachrichten gefunden."
 
         # Die neueste Nachricht ist die letzte in der Liste
-        print('messages:', messages, "\r\n")
         latest_message = messages[0]
 
         # Überprüfe, ob die neueste Nachricht Inhalte vom Typ 'text' enthält
@@ -133,6 +131,15 @@ class OpenAIHelper:
             return latest_message.content[0].text.value
         else:
             return "Die neueste Nachricht enthält keinen Textinhalt."
+
+    #format the message content to be a chat history with line wise messages
+    def get_all_messages_content_as_a_chat_history(self, thread_id):
+        messages = self.list_thread_messages(thread_id)
+        chat_history = []
+        for message in messages:
+            if message.content and isinstance(message.content[0], MessageContentText):
+                chat_history.append(message.content[0].text.value)
+        return '\n'.join(chat_history)
 
     def retrieve_message(self, message_id, thread_id):
         message = self.client.beta.threads.messages.retrieve(
