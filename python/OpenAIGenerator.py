@@ -1,7 +1,13 @@
 import json
+import os
+import subprocess
+from datetime import datetime
 from openai import OpenAI
 from python.OpenAIHelper import OpenAIHelper
 import time  # Für die Wartezeit zwischen den Statusabfragen
+import re
+from subprocess import call
+import shutil
 
 
 class OpenAIGenerator:
@@ -25,119 +31,108 @@ class OpenAIGenerator:
         self.client = OpenAI(api_key=self.api_key)
         # self.helper.delete_all_assistants()
 
-    def _get_headers(self):
-        """Hilfsmethode zur Generierung der Request-Header."""
-        return {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer {self.api_key}"
-        }
+    def execute_and_move_shell_script(self, script_path, thread_id):
+
+        if os.path.exists(script_path):
+            print(f"Executing shell script: {script_path}")
+            subprocess.call(["sh", script_path])
+
+            executed_directory = "shellscripts/executed"
+            os.makedirs(executed_directory, exist_ok=True)
+            shutil.move(script_path, executed_directory)
+
+            success_prompt = f"Executed and moved the shell script to: {executed_directory}"
+            print(success_prompt)
+            self.helper.create_thread_message(thread_id, "user", success_prompt)
+            return success_prompt, True  # Rückgabe eines Tuples mit success_prompt und True
+        else:
+            print(f"Shell script not found: {script_path}")
+            return f"Shell script not found: {script_path}", False
+
+    def write_shell_command_to_file(self, shell_command, thread_id):
+        # Extract all commands between ```bash and ```
+        bash_command_pattern = r"```(bash|shell)(.*?)```"
+        bash_commands = re.findall(bash_command_pattern, shell_command, re.DOTALL)
+
+        for bash_command_tuple in bash_commands:
+            # Select the command text from the tuple, which is the second group
+            bash_command_content = bash_command_tuple[1].strip()
+
+            # Create the filename with the current timestamp
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            directory = "shellscripts"
+            filename = f"{directory}/script_{timestamp}.sh"
+
+            # Ensure the directory exists
+            os.makedirs(directory, exist_ok=True)
+
+            # Write the Bash command to the file
+            with open(filename, "w") as file:
+                file.write(bash_command_content)
+
+            success_prompt = f"Shell command written to file: {filename}"
+            print('success_prompt: ', success_prompt)
+
+            # Create a thread message and execute the script
+            self.helper.create_thread_message(thread_id, "user", success_prompt)
+            self.execute_and_move_shell_script(filename, thread_id)
+        return True
 
     def generate_text(self, prompt, thread_id=None, run_id=None, assistant_id=None, model_version="gpt-4-1106-preview",
                       max_tokens=4000):
+        # print('model_version: ', model_version)
         if model_version not in [self.MODEL_1, self.MODEL_2, self.MODEL_3]:
             return "Invalid model version specified."
-        # Erstelle einen neuen Thread, wenn keine Thread-ID vorhanden ist
-        # if thread_id is None:
-        #     thread_response = self.helper.create_empty_thread()
-        #     if thread_response and 'id' in thread_response:
-        #         thread_id = thread_response.get('id')
-        #     else:
-        #         # Fehlerbehandlung, wenn keine Thread-ID erstellt werden konnte
-        #         return "Failed to create thread or retrieve thread ID."
-        # print('model version:', model_version)
-        if model_version == self.MODEL_3:
-            response = self._make_request_gpt_3_5(prompt, max_tokens)
         else:
+            extended_prompt = (f"when you are instructed to change anything on the website, always return a shell code "
+                               f"snippet. here is the prompt: {prompt}")
             # Für GPT-4 Modelle, nutze die Thread-Logik
-            response = self._make_request_gpt_4(prompt, thread_id, run_id, assistant_id)
+            response = self._make_request_gpt_4(extended_prompt, thread_id, run_id, assistant_id)
 
         return response
 
-    # def _make_request(self, prompt, model, max_tokens, thread_id=None, run_id=None):
-    #     if model == self.MODEL_3:  # gpt-3.5-turbo-16k verwendet eine andere Endpunktstruktur
-    #         return self._make_request_gpt_3_5(prompt, max_tokens)
-    #     else:  # Für GPT-4 Modelle
-    #         return self._make_request_gpt_4(prompt, thread_id, run_id)
+    def buildAnswerWithGPT4(self, prompt, latest_message):
+        final_prompt = (f"this was my prompt: {prompt} and this the assistants answer: {latest_message}. Generate "
+                        f"a very short answer,  very high level, from the point of view "
+                        f"of the assistant like a summary of the original answer but with necessary information, "
+                        f"from the assistant.")
+        completion = self.client.chat.completions.create(
+            model="gpt-4-turbo-preview",
+            messages=[
+                {"role": "user", "content": final_prompt}
+            ]
+        )
+        return completion.choices[0].message.content
 
     def _make_request_gpt_4(self, prompt, thread_id=None, run_id=None, assistant_id=None):
-        # Füge die Anfrage als Nachricht zu einem existierenden Thread hinzu
+
+        current_old_run = self.helper.retrieve_run(thread_id, run_id)
+
+        # Warte, bis der Run-Status auf "completed" gesetzt ist
+        while current_old_run.status != 'completed':
+            time.sleep(1)  # Warte eine Sekunde vor der nächsten Statusabfrage
+
         self.helper.create_thread_message(thread_id, "user", prompt)
+
         current_run = self.helper.create_run(thread_id, assistant_id)
 
         run_id = current_run.id
 
         # Warte, bis der Run-Status auf "completed" gesetzt ist
         while current_run.status != 'completed':
-            # print("Warte auf Run-Abschluss. Aktueller Status:", current_run.status)
             time.sleep(1)  # Warte eine Sekunde vor der nächsten Statusabfrage
             current_run = self.helper.retrieve_run(thread_id, run_id)  # Aktualisiere den Run-Status
 
         # Hole die neueste Nachricht vom Assistant als Antwort, nachdem der Run abgeschlossen ist
         latest_message = self.helper.get_latest_message_content(thread_id)
-
-        chat_history = self.helper.get_all_messages_content_as_a_chat_history(thread_id)
-        # print('chat history:', chat_history)
-        return latest_message
-
-    def _make_request_gpt_3_5(self, prompt, max_tokens):
-        try:
-            completion = self.client.chat.completions.create(
-                model="gpt-3.5-turbo-16k",
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=max_tokens
-            )
-
-            # Hier gehen wir davon aus, dass die Antwort mindestens eine Wahl enthält
-            if completion.choices:
-                return completion.choices[0].message
-            else:
-                return {"error": "No completion choices returned."}
-        except Exception as e:
-            print("An exception occurred: {e}")
-            return {"error": f"An exception occurred: {e}"}
-
-    def _is_response_valid(self, response):
-        try:
-            # Versuche zuerst, auf die Antwort als Dictionary zuzugreifen
-            if 'choices' in response and response['choices']:
-                message_content = response['choices'][0]['message']['content']
-            elif response.content:
-                # Überprüfe, ob 'content' existiert und die 'get'-Methode aufrufbar ist
-                file_type_object = json.loads(response.content)
-                file_type = file_type_object.get('file_type')
-                return bool(file_type)  # Gültig, wenn 'file_type' vorhanden und nicht leer ist
-            else:
-                return False
-        except (TypeError, AttributeError):
-            # Wenn ein TypeError oder AttributeError auftritt, versuche, die Antwort als Objekt zu behandeln
-            try:
-                if hasattr(response, 'choices') and response.choices:
-                    message_content = response.choices[0].message.content
-                else:
-                    return False
-            except (TypeError, AttributeError):
-                # Wenn erneut Fehler auftreten, ist die Antwort definitiv ungültig
-                return False
-        # Versuche, den 'content' zu parsen, falls er noch nicht als 'file_type' extrahiert wurde
-        try:
-            if 'message_content' in locals():  # Prüft, ob 'message_content' bereits definiert wurde
-                content_data = json.loads(message_content)
-                file_type = content_data.get('file_type')
-                return bool(file_type)  # Gültig, wenn 'file_type' vorhanden und nicht leer ist
-        except (ValueError, AttributeError):
-            # Fange Fehler beim Parsen von JSON oder beim Zugriff auf nicht vorhandene Attribute
-            return False
-
-        # Die Antwort ist ungültig, wenn keine der obigen Bedingungen erfüllt ist
-        return False
-
-    def _extract_text(self, response, model_version):
-        if model_version == self.MODEL_3:
-            file_type_object = json.loads(response.content)
-            file_type = file_type_object.get('file_type')
-            return file_type.strip()
+        self.helper.create_thread_message(thread_id, "user", latest_message)
+        shellWritten = self.write_shell_command_to_file(latest_message, thread_id)
+        if shellWritten:
+            answerToMe = self.buildAnswerWithGPT4(prompt, 'Shell command written to file and executed.')
         else:
-            return response['choices'][0]['text'].strip()
+            answerToMe = self.buildAnswerWithGPT4(prompt, latest_message)
+        return answerToMe
+        # self.process_latest_message(latest_message)
+
+        # chat_history = self.helper.get_all_messages_content_as_a_chat_history(thread_id)
+        # return response_text, shell_action_required

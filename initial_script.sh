@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Definiere den Pfad zum Website-Ordner
+# Definiere den Pfad zum website-Ordner
 website_folder="./Website"
 
-# Erstelle den Website-Ordner, falls er noch nicht existiert
+# Erstelle den website-Ordner, falls er noch nicht existiert
 mkdir -p "$website_folder"
 
-# Erstelle Testdateien in dem Website-Ordner
+# Erstelle Testdateien in dem website-Ordner
 echo '<!DOCTYPE html>
 <html>
 <head>

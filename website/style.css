@@ -1,0 +1,40 @@
+#new-section { color: red; }
+#new-section { color: blue; }
+#header h1 { color: blue; }
+body { background-color: lightblue; }
+.black-box { background-color: green; }
+.black-box { width: 300px; height: 300px; }
+.black-box {
+    position: absolute;
+    transition: left 5s linear;
+}
+.black-box {
+    position: absolute;
+    left: 0;
+    transition: left 2s linear;
+}
+
+@keyframes moveLeftToRight {
+    0% { left: 0; }
+    100% { left: calc(100% - 300px); }
+}
+.black-box {
+    position: absolute;
+    left: 0;
+    animation: moveLeftToRight 2s linear infinite;
+}
+
+@keyframes moveLeftToRight {
+    0% { left: 0; }
+    100% { left: calc(100% - 300px); }
+}
+.black-box {
+    position: absolute;
+    left: 0;
+    animation: moveLeftToRight 2s linear infinite;
+}
+
+@keyframes moveLeftToRight {
+    0% { left: 0; }
+    100% { left: calc(100% - 300px); }
+}

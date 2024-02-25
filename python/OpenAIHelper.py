@@ -7,39 +7,14 @@ class OpenAIHelper:
         self.client = openai.OpenAI(api_key=api_key)
 
     def ensure_assistant_exists(self):
-        name = "My Custom Assistant"
-        instructions = "Please assist the user."
-        tools = []
+        name = "My Custom Web DEV Assistant"
+        instructions = "You are a web developer assistant that helps with web development tasks."
+        tools = ["code_interpreter"]
         model = "gpt-3.5-turbo-1106"
         new_assistant = self.create_assistant(instructions, name, tools, model)
         # print("Neuer Assistent erstellt: ", new_assistant.id, "\r\n")
         return new_assistant
 
-    def save_thread_id(self, thread_id, file_path='current_thread_id.txt'):
-        """Speichert die Thread-ID in einer Datei."""
-        with open(file_path, 'w') as file:
-            file.write(thread_id)
-
-    def load_thread_id(self, file_path='current_thread_id.txt'):
-        """Lädt die Thread-ID aus einer Datei, falls vorhanden."""
-        try:
-            with open(file_path, 'r') as file:
-                return file.read().strip()
-        except FileNotFoundError:
-            return None
-
-    def save_run_id(self, run_id, file_path='current_run_id.txt'):
-        """Speichert die Run-ID in einer Datei."""
-        with open(file_path, 'w') as file:
-            file.write(run_id)
-
-    def load_run_id(self, file_path='current_run_id.txt'):
-        """Lädt die Run-ID aus einer Datei, falls vorhanden."""
-        try:
-            with open(file_path, 'r') as file:
-                return file.read().strip()
-        except FileNotFoundError:
-            return None
 
     def create_assistant(self, instructions, name, tools, model):
         my_assistant = self.client.beta.assistants.create(
